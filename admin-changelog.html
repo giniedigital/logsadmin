@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Changelog Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<!-- ─── SUPABASE SDK ─── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0e;--bg2:#111114;--bg3:#17171b;--bg4:#1d1d22;--bg5:#232329;
+  --border:#252528;--border2:#2e2e34;--border3:#3a3a42;
+  --text:#eeede6;--text2:#8a8994;--text3:#4a4a54;
+  --accent:#c8f050;--accent-dim:#a8d038;
+  --red:#f05060;--blue:#5aaaf0;--amber:#f0b040;--purple:#9f7aea;--teal:#40c8a0;--pink:#f06090;
+  --r:10px;--r2:7px;--r3:5px;
+  --font:'Geist',sans-serif;--mono:'DM Mono',monospace;--serif:'Instrument Serif',serif;
+  --shadow:0 1px 3px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.3);
+}
+html{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.6}
+body{min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border3);border-radius:4px}
+
+/* ── CONFIG SCREEN ── */
+.config-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center}
+.config-screen.hidden{display:none}
+.config-card{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);animation:cardIn .25s ease}
+.config-header{padding:28px 32px 20px;border-bottom:1px solid var(--border)}
+.config-logo{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.config-dot{width:34px;height:34px;background:var(--accent);border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.config-heading{font-size:18px;font-weight:600;letter-spacing:-.3px;margin-bottom:4px}
+.config-sub{font-size:13px;color:var(--text3)}
+.config-body{padding:24px 32px 28px;display:flex;flex-direction:column;gap:14px}
+.config-note{background:rgba(90,170,240,.06);border:1px solid rgba(90,170,240,.15);border-radius:var(--r2);padding:12px 14px;font-size:12px;color:var(--blue);line-height:1.5}
+.config-note a{color:var(--accent);text-decoration:none}
+.config-note a:hover{text-decoration:underline}
+.config-group{display:flex;flex-direction:column;gap:5px}
+.config-group label{font-size:11px;font-family:var(--mono);font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.8px}
+.config-input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 12px;font-size:13px;color:var(--text);font-family:var(--mono);width:100%;outline:none;transition:border-color .12s}
+.config-input:focus{border-color:rgba(200,240,80,.4)}
+.config-input::placeholder{color:var(--text3)}
+.config-btn{background:var(--accent);color:#0c0c0e;border:none;border-radius:var(--r2);padding:11px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.config-btn:hover{background:var(--accent-dim)}
+.config-error{background:rgba(240,80,96,.08);border:1px solid rgba(240,80,96,.2);border-radius:var(--r2);padding:10px 14px;font-size:12px;color:var(--red);display:none;align-items:center;gap:8px}
+.config-error.show{display:flex}
+
+/* ── LOGIN ── */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center}
+.login-screen.hidden{display:none}
+.login-card{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:380px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);animation:cardIn .25s ease}
+.login-top{padding:32px 32px 24px;border-bottom:1px solid var(--border)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+.login-logo-dot{width:34px;height:34px;background:var(--accent);border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.login-heading{font-size:20px;font-weight:600;margin-bottom:4px;letter-spacing:-.3px}
+.login-sub{font-size:13px;color:var(--text3)}
+.login-form{padding:24px 32px 28px;display:flex;flex-direction:column;gap:16px}
+.login-group{display:flex;flex-direction:column;gap:6px}
+.login-group label{font-size:11px;font-family:var(--mono);font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.8px}
+.login-input-wrap{position:relative;display:flex;align-items:center}
+.login-input-wrap .field-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text3);pointer-events:none;z-index:1;flex-shrink:0;stroke:currentColor}
+.login-input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 40px 10px 38px;font-size:13px;color:var(--text);font-family:var(--font);width:100%;outline:none;transition:border-color .12s}
+.login-input:focus{border-color:rgba(200,240,80,.4);background:var(--bg4)}
+.login-input::placeholder{color:var(--text3)}
+.login-input.error{border-color:rgba(240,80,96,.5)!important;background:rgba(240,80,96,.04)!important}
+.eye-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;transition:color .12s;display:flex;align-items:center;z-index:1;line-height:0}
+.eye-toggle:hover{color:var(--text2)}
+.eye-toggle svg{display:block;width:15px;height:15px;flex-shrink:0}
+.login-error{background:rgba(240,80,96,.08);border:1px solid rgba(240,80,96,.2);border-radius:var(--r2);padding:10px 14px;font-size:12px;color:var(--red);display:none;align-items:center;gap:8px}
+.login-error.show{display:flex}
+.login-error svg{width:14px;height:14px;flex-shrink:0}
+.login-btn{background:var(--accent);color:#0c0c0e;border:none;border-radius:var(--r2);padding:11px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.login-btn:hover{background:var(--accent-dim)}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-btn .spinner{width:14px;height:14px;border:2px solid rgba(0,0,0,.25);border-top-color:#0c0c0e;border-radius:50%;animation:spin .6s linear infinite;display:none}
+.login-btn.loading .spinner{display:block}
+.login-btn.loading .btn-txt{display:none}
+.login-hint{text-align:center;font-size:11px;color:var(--text3);font-family:var(--mono)}
+.login-hint span{color:var(--accent)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SHELL ── */
+.shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+
+aside{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.logo-wrap{padding:20px 18px;border-bottom:1px solid var(--border)}
+.logo-row{display:flex;align-items:center;gap:10px}
+.logo-dot{width:30px;height:30px;background:var(--accent);border-radius:8px;display:grid;place-items:center;flex-shrink:0}
+.logo-dot svg{width:15px;height:15px}
+.logo-name{font-size:14px;font-weight:600;letter-spacing:-.2px}
+.logo-tag{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:1px}
+nav{padding:12px 10px;flex:1}
+.nav-label{font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:10px 8px 5px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r2);color:var(--text2);font-size:13px;cursor:pointer;transition:all .12s;margin-bottom:1px;user-select:none}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:rgba(200,240,80,.08);color:var(--accent);font-weight:500}
+.nav-item svg{width:15px;height:15px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--bg5);color:var(--text2);font-size:10px;font-family:var(--mono);padding:1px 6px;border-radius:10px;min-width:20px;text-align:center}
+.nav-item.active .nav-badge{background:rgba(200,240,80,.15);color:var(--accent)}
+.sidebar-foot{padding:14px 10px;border-top:1px solid var(--border);margin-top:auto}
+.profile-row{display:flex;align-items:center;gap:9px;padding:8px 8px;border-radius:var(--r2)}
+.avatar{width:28px;height:28px;background:linear-gradient(135deg,var(--purple),var(--blue));border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:600;flex-shrink:0}
+.profile-name{font-size:12px;font-weight:500}
+.profile-role{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.logout-btn{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--r2);color:var(--text3);font-size:12px;cursor:pointer;transition:all .12s;background:none;border:none;font-family:var(--font);width:100%;margin-top:6px}
+.logout-btn:hover{background:rgba(240,80,96,.08);color:var(--red)}
+.logout-btn svg{width:14px;height:14px}
+
+main{display:flex;flex-direction:column;min-height:100vh;overflow:hidden}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:20}
+.topbar-left{display:flex;align-items:center;gap:8px}
+.page-title{font-size:14px;font-weight:500}
+.topbar-right{display:flex;align-items:center;gap:8px}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r2);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .12s;font-family:var(--font);line-height:1;white-space:nowrap}
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text);border-color:var(--border3)}
+.btn-primary{background:var(--accent);color:#0c0c0e;border:1px solid var(--accent)}
+.btn-primary:hover{background:var(--accent-dim)}
+.btn-danger{background:rgba(240,80,96,.1);color:var(--red);border:1px solid rgba(240,80,96,.2)}
+.btn-danger:hover{background:rgba(240,80,96,.18)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.content{flex:1;padding:28px;overflow-y:auto}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;transition:border-color .15s}
+.stat-card:hover{border-color:var(--border2)}
+.stat-label{font-size:11px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.stat-val{font-size:24px;font-weight:600;font-family:var(--serif);font-style:italic;line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.stat-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px}
+
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:13px;font-weight:500;color:var(--text2)}
+.filter-row{display:flex;align-items:center;gap:8px}
+.filter-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);font-family:var(--font);transition:all .12s}
+.filter-btn:hover,.filter-btn.active{background:var(--bg4);color:var(--text);border-color:var(--border3)}
+.filter-btn.active{color:var(--accent);border-color:rgba(200,240,80,.3);background:rgba(200,240,80,.06)}
+
+.entries-list{display:flex;flex-direction:column;gap:10px}
+.entry-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:all .15s}
+.entry-card:hover{border-color:var(--border2);background:var(--bg3)}
+.entry-inner{padding:16px 18px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start}
+.entry-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.version-pill{font-family:var(--mono);font-size:11px;font-weight:500;background:var(--bg5);border:1px solid var(--border2);color:var(--text);padding:2px 8px;border-radius:4px}
+.date-txt{font-size:11px;font-family:var(--mono);color:var(--text3)}
+.status-pill{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:20px;font-weight:500;letter-spacing:.3px}
+.status-pill.published{background:rgba(64,200,160,.12);color:var(--teal);border:1px solid rgba(64,200,160,.2)}
+.status-pill.draft{background:rgba(240,176,64,.1);color:var(--amber);border:1px solid rgba(240,176,64,.2)}
+.entry-title{font-size:14px;font-weight:500;margin-bottom:6px;line-height:1.3}
+.entry-tags{display:flex;gap:5px;flex-wrap:wrap}
+.tag{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:4px;font-weight:500;letter-spacing:.3px}
+.tag-feature{background:rgba(90,170,240,.1);color:var(--blue);border:1px solid rgba(90,170,240,.15)}
+.tag-bug{background:rgba(240,80,96,.1);color:var(--red);border:1px solid rgba(240,80,96,.15)}
+.tag-ui{background:rgba(159,122,234,.1);color:var(--purple);border:1px solid rgba(159,122,234,.15)}
+.tag-performance{background:rgba(64,200,160,.1);color:var(--teal);border:1px solid rgba(64,200,160,.15)}
+.tag-security{background:rgba(240,176,64,.1);color:var(--amber);border:1px solid rgba(240,176,64,.15)}
+.tag-breaking{background:rgba(240,80,96,.15);color:var(--red);border:1px solid rgba(240,80,96,.25)}
+.entry-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.has-media{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);font-family:var(--mono)}
+.has-media svg{width:12px;height:12px}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty svg{width:40px;height:40px;opacity:.3;margin:0 auto 12px}
+.empty p{font-size:13px}
+
+/* loading skeleton */
+.skeleton{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;animation:pulse 1.5s ease-in-out infinite}
+.skel-line{height:10px;background:var(--bg4);border-radius:4px;margin-bottom:8px}
+.skel-wide{width:60%}
+.skel-med{width:40%}
+.skel-short{width:25%}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;backdrop-filter:blur(4px)}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:780px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);margin:auto;animation:slideUp .2s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:500}
+.modal-close{width:28px;height:28px;display:grid;place-items:center;border-radius:6px;cursor:pointer;color:var(--text3);background:transparent;border:none;transition:all .12s}
+.modal-close:hover{background:var(--bg4);color:var(--text)}
+.modal-body{padding:24px;display:flex;flex-direction:column;gap:18px;max-height:calc(100vh - 200px);overflow-y:auto}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+label{font-size:12px;font-weight:500;color:var(--text2);font-family:var(--mono)}
+input[type=text],input[type=date],select,textarea{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:9px 12px;font-size:13px;color:var(--text);font-family:var(--font);width:100%;transition:border-color .12s;outline:none}
+input[type=text]:focus,input[type=date]:focus,select:focus,textarea:focus{border-color:rgba(200,240,80,.4)}
+input[type=text]::placeholder,textarea::placeholder{color:var(--text3)}
+textarea{resize:vertical;min-height:100px;line-height:1.6}
+select option{background:var(--bg3)}
+
+.tags-grid{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}
+.tag-toggle{padding:5px 12px;border-radius:20px;font-size:11px;font-family:var(--mono);font-weight:500;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .12s;letter-spacing:.3px}
+.tag-toggle:hover{border-color:var(--border3);color:var(--text)}
+.tag-toggle.sel-feature{background:rgba(90,170,240,.12);color:var(--blue);border-color:rgba(90,170,240,.3)}
+.tag-toggle.sel-bug{background:rgba(240,80,96,.12);color:var(--red);border-color:rgba(240,80,96,.3)}
+.tag-toggle.sel-ui{background:rgba(159,122,234,.12);color:var(--purple);border-color:rgba(159,122,234,.3)}
+.tag-toggle.sel-performance{background:rgba(64,200,160,.12);color:var(--teal);border-color:rgba(64,200,160,.3)}
+.tag-toggle.sel-security{background:rgba(240,176,64,.12);color:var(--amber);border-color:rgba(240,176,64,.3)}
+.tag-toggle.sel-breaking{background:rgba(240,80,96,.15);color:var(--red);border-color:rgba(240,80,96,.35)}
+
+/* upload zone */
+.upload-zone{border:1px dashed var(--border3);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:all .15s;position:relative}
+.upload-zone:hover{border-color:rgba(200,240,80,.3);background:rgba(200,240,80,.02)}
+.upload-zone.dragging{border-color:var(--accent);background:rgba(200,240,80,.04)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-icon{width:36px;height:36px;margin:0 auto 10px;background:var(--bg4);border-radius:8px;display:grid;place-items:center;color:var(--text3)}
+.upload-icon svg{width:18px;height:18px}
+.upload-label{font-size:13px;color:var(--text2);margin-bottom:4px}
+.upload-hint{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.media-preview{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.media-thumb{position:relative;width:80px;height:60px;border-radius:var(--r2);overflow:hidden;border:1px solid var(--border2)}
+.media-thumb img,.media-thumb video{width:100%;height:100%;object-fit:cover}
+.media-thumb .remove-media{position:absolute;top:3px;right:3px;width:18px;height:18px;background:rgba(0,0,0,.7);border-radius:50%;display:grid;place-items:center;cursor:pointer;color:#fff;font-size:10px;border:none}
+.upload-progress{height:3px;background:var(--bg4);border-radius:2px;margin-top:8px;overflow:hidden;display:none}
+.upload-progress-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .2s}
+
+.bullets-list{display:flex;flex-direction:column;gap:6px}
+.bullet-row{display:flex;gap:8px;align-items:center}
+.bullet-row input{flex:1}
+.bullet-row .btn-icon{width:28px;height:28px;padding:0;display:grid;place-items:center;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:var(--r3);cursor:pointer;transition:all .12s;flex-shrink:0}
+.bullet-row .btn-icon:hover{background:var(--bg4);color:var(--red);border-color:rgba(240,80,96,.3)}
+.add-bullet{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);cursor:pointer;padding:6px 0;width:fit-content;background:none;border:none;font-family:var(--font);transition:color .12s}
+.add-bullet:hover{color:var(--accent)}
+.add-bullet svg{width:13px;height:13px}
+
+.section-toggle{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:12px 14px}
+.section-toggle-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.section-toggle-title{font-size:12px;font-weight:500;font-family:var(--mono);color:var(--text2)}
+.section-toggle-body{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.toggle-switch{position:relative;width:32px;height:18px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;inset:0;background:var(--bg5);border:1px solid var(--border2);border-radius:9px;transition:.15s;cursor:pointer}
+.toggle-slider::before{content:'';position:absolute;width:12px;height:12px;left:2px;top:2px;background:var(--text3);border-radius:50%;transition:.15s}
+.toggle-switch input:checked+.toggle-slider{background:rgba(200,240,80,.15);border-color:rgba(200,240,80,.4)}
+.toggle-switch input:checked+.toggle-slider::before{transform:translateX(14px);background:var(--accent)}
+
+.preview-wrap{background:var(--bg);border-radius:var(--r);padding:28px;font-family:var(--font)}
+.preview-date{font-size:12px;font-family:var(--mono);color:var(--text3);margin-bottom:8px}
+.preview-version{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--bg4);border:1px solid var(--border2);padding:2px 8px;border-radius:4px;margin-bottom:12px}
+.preview-title{font-family:var(--serif);font-style:italic;font-size:26px;line-height:1.2;margin-bottom:14px}
+.preview-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.preview-image{width:100%;border-radius:var(--r);overflow:hidden;margin-bottom:16px;max-height:260px;object-fit:cover}
+.preview-bullets{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.preview-bullets li{display:flex;gap:10px;font-size:14px;color:var(--text2);line-height:1.5}
+.preview-bullets li::before{content:'·';color:var(--accent);font-size:20px;line-height:1;flex-shrink:0;margin-top:-1px}
+.preview-bullets strong{color:var(--text)}
+.preview-code{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;font-family:var(--mono);font-size:12px;color:var(--text2);margin-bottom:16px;overflow-x:auto;line-height:1.7}
+.preview-section-title{font-size:12px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+.confirm-modal{max-width:420px}
+.confirm-body{padding:24px;text-align:center}
+.confirm-icon{width:48px;height:48px;background:rgba(240,80,96,.1);border-radius:50%;display:grid;place-items:center;margin:0 auto 14px;color:var(--red)}
+.confirm-icon svg{width:22px;height:22px}
+.confirm-title{font-size:15px;font-weight:500;margin-bottom:8px}
+.confirm-desc{font-size:13px;color:var(--text2);line-height:1.5}
+.confirm-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:var(--shadow);animation:toastIn .2s ease;max-width:300px}
+.toast.out{animation:toastOut .2s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(10px)}}
+.toast-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.toast.success .toast-dot{background:var(--teal)}
+.toast.error .toast-dot{background:var(--red)}
+.toast.info .toast-dot{background:var(--blue)}
+.divider{height:1px;background:var(--border);margin:4px 0}
+
+.search-wrap{position:relative}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3);pointer-events:none}
+.search-input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:7px 12px 7px 32px;font-size:13px;color:var(--text);font-family:var(--font);width:220px;outline:none;transition:border-color .12s}
+.search-input:focus{border-color:rgba(200,240,80,.3);width:260px}
+.search-input::placeholder{color:var(--text3)}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     STEP 1 — SUPABASE CONFIG SCREEN
+     User enters their project URL + anon key once.
+     Stored in localStorage so they don't retype it.
+════════════════════════════════════════════ -->
+<div class="config-screen" id="config-screen">
+  <div class="config-card">
+    <div class="config-header">
+      <div class="config-logo">
+        <div class="config-dot">
+          <svg viewBox="0 0 16 16" fill="#0c0c0e"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:600">Changelog Admin</div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono)">supabase setup</div>
+        </div>
+      </div>
+      <div class="config-heading">Connect your Supabase project</div>
+      <div class="config-sub">Enter your credentials once — they're saved in your browser.</div>
+    </div>
+    <div class="config-body">
+      <div class="config-note">
+        Go to <a href="https://supabase.com/dashboard" target="_blank">supabase.com/dashboard</a> → your project → <strong>Settings → API</strong>.
+        Copy the <strong>Project URL</strong> and <strong>anon public</strong> key.
+        Then run the SQL in the <strong>SQL Editor</strong> from the setup guide below.
+      </div>
+      <div class="config-group">
+        <label>Supabase Project URL</label>
+        <input class="config-input" type="text" id="cfg-url" placeholder="https://xxxxxxxxxxxx.supabase.co"/>
+      </div>
+      <div class="config-group">
+        <label>Supabase Anon Key</label>
+        <input class="config-input" type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."/>
+      </div>
+      <div class="config-error" id="cfg-error">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><circle cx="8" cy="11" r=".5" fill="currentColor"/></svg>
+        <span id="cfg-error-msg">Invalid credentials</span>
+      </div>
+      <button class="config-btn" onclick="saveConfig()">
+        Connect to Supabase →
+      </button>
+      <div style="text-align:center">
+        <button onclick="showSqlGuide()" style="background:none;border:none;color:var(--text3);font-size:12px;font-family:var(--mono);cursor:pointer;text-decoration:underline">Show SQL setup guide</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SQL Guide Modal -->
+<div class="overlay" id="sql-modal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title">Supabase SQL Setup</span>
+      <button class="modal-close" onclick="closeModal('sql-modal')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">
+        Run this SQL in your Supabase project → <strong>SQL Editor</strong> → <strong>New Query</strong>:
+      </div>
+      <pre style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:16px;font-family:var(--mono);font-size:11px;color:var(--text2);overflow-x:auto;line-height:1.7;white-space:pre-wrap">-- 1. Changelog entries table
+CREATE TABLE IF NOT EXISTS changelog_entries (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  version     TEXT NOT NULL,
+  title       TEXT NOT NULL,
+  date        DATE NOT NULL,
+  description TEXT,
+  code        TEXT,
+  tags        TEXT[]  DEFAULT '{}',
+  bullets     TEXT[]  DEFAULT '{}',
+  features    TEXT[]  DEFAULT '{}',
+  bugs        TEXT[]  DEFAULT '{}',
+  media       JSONB   DEFAULT '[]',
+  status      TEXT    NOT NULL DEFAULT 'draft',
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+-- 2. Auto-update updated_at
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN NEW.updated_at = now(); RETURN NEW; END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER changelog_updated_at
+  BEFORE UPDATE ON changelog_entries
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- 3. Row Level Security — only authenticated users can write
+ALTER TABLE changelog_entries ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read published"
+  ON changelog_entries FOR SELECT
+  USING (status = 'published' OR auth.role() = 'authenticated');
+
+CREATE POLICY "Auth users can insert"
+  ON changelog_entries FOR INSERT
+  WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Auth users can update"
+  ON changelog_entries FOR UPDATE
+  USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Auth users can delete"
+  ON changelog_entries FOR DELETE
+  USING (auth.role() = 'authenticated');
+
+-- 4. Storage bucket for media
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('changelog-media', 'changelog-media', true)
+ON CONFLICT DO NOTHING;
+
+CREATE POLICY "Public read media"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'changelog-media');
+
+CREATE POLICY "Auth upload media"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'changelog-media' AND auth.role() = 'authenticated');
+
+CREATE POLICY "Auth delete media"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'changelog-media' AND auth.role() = 'authenticated');</pre>
+      <div style="font-size:12px;color:var(--text3);line-height:1.6">
+        <strong style="color:var(--text2)">Then create your admin user:</strong><br/>
+        Go to <strong>Authentication → Users → Add User</strong> and create an account with your email + password. That's what you'll log in with.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('sql-modal')">Got it</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     STEP 2 — LOGIN (uses Supabase Auth)
+════════════════════════════════════════════ -->
+<div class="login-screen hidden" id="login-screen">
+  <div class="login-card">
+    <div class="login-top">
+      <div class="login-logo">
+        <div class="login-logo-dot">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="#0c0c0e"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:600">Changelog Admin</div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono)">internal dashboard</div>
+        </div>
+      </div>
+      <div class="login-heading">Welcome back</div>
+      <div class="login-sub">Sign in to manage your changelogs</div>
+    </div>
+    <div class="login-form">
+      <div class="login-group">
+        <label>Email</label>
+        <div class="login-input-wrap">
+          <svg class="field-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="4" width="12" height="9" rx="1.5"/><polyline points="2 4 8 9 14 4"/></svg>
+          <input class="login-input" type="text" id="l-user" placeholder="you@example.com" autocomplete="email" onkeydown="loginKey(event)"/>
+        </div>
+      </div>
+      <div class="login-group">
+        <label>Password</label>
+        <div class="login-input-wrap">
+          <svg class="field-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>
+          <input class="login-input" type="password" id="l-pass" placeholder="Enter password" autocomplete="current-password" onkeydown="loginKey(event)"/>
+          <button class="eye-toggle" onclick="toggleEye()" id="eye-btn" type="button">
+            <svg id="eye-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" width="15" height="15"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="login-error" id="login-error">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><circle cx="8" cy="11" r=".5" fill="currentColor"/></svg>
+        <span id="login-error-msg">Invalid email or password</span>
+      </div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">
+        <div class="spinner"></div>
+        <span class="btn-txt">Sign In</span>
+      </button>
+      <div class="login-hint">
+        <span style="color:var(--text3);cursor:pointer" onclick="resetConfig()">← Change Supabase project</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     STEP 3 — MAIN DASHBOARD
+════════════════════════════════════════════ -->
+<div class="shell" id="main-shell" style="display:none">
+<aside>
+  <div class="logo-wrap">
+    <div class="logo-row">
+      <div class="logo-dot">
+        <svg viewBox="0 0 16 16" fill="#0c0c0e"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+      </div>
+      <div>
+        <div class="logo-name">Changelog</div>
+        <div class="logo-tag">admin panel</div>
+      </div>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-label">Manage</div>
+    <div class="nav-item active" onclick="setNav(this,'entries')">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>
+      All Entries
+      <span class="nav-badge" id="badge-all">0</span>
+    </div>
+    <div class="nav-item" onclick="setNav(this,'published')">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><path d="M5.5 8.5l2 2 3-3"/></svg>
+      Published
+      <span class="nav-badge" id="badge-pub">0</span>
+    </div>
+    <div class="nav-item" onclick="setNav(this,'draft')">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 12l2-2 7-7 2 2-7 7-2 2z"/><path d="M10 4l2 2"/></svg>
+      Drafts
+      <span class="nav-badge" id="badge-draft">0</span>
+    </div>
+    <div class="nav-label" style="margin-top:8px">Views</div>
+    <div class="nav-item" onclick="openPreviewSite()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="3" width="14" height="10" rx="2"/><line x1="4" y1="6" x2="12" y2="6"/><line x1="4" y1="9" x2="9" y2="9"/></svg>
+      Public Page
+    </div>
+    <div class="nav-item" onclick="openWidgetPreview()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="1" width="10" height="14" rx="2"/><line x1="6" y1="5" x2="10" y2="5"/><line x1="6" y1="8" x2="10" y2="8"/><line x1="6" y1="11" x2="8" y2="11"/></svg>
+      In-App Widget
+    </div>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="profile-row">
+      <div class="avatar" id="sidebar-avatar">A</div>
+      <div>
+        <div class="profile-name" id="sidebar-name">Admin</div>
+        <div class="profile-role" id="sidebar-role">authenticated</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 14H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3"/><polyline points="11 11 14 8 11 5"/><line x1="14" y1="8" x2="6" y2="8"/></svg>
+      Sign out
+    </button>
+  </div>
+</aside>
+
+<main>
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="page-title" id="page-title-txt">All Entries</span>
+    </div>
+    <div class="topbar-right">
+      <div class="search-wrap">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+        <input class="search-input" placeholder="Search changelogs..." oninput="renderList()" id="search-input"/>
+      </div>
+      <button class="btn btn-primary" onclick="openCreateModal()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+        New Entry
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total</div>
+        <div class="stat-val" id="stat-total">—</div>
+        <div class="stat-sub">entries created</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Published</div>
+        <div class="stat-val" id="stat-pub" style="color:var(--teal)">—</div>
+        <div class="stat-sub"><span class="stat-dot" style="background:var(--teal)"></span>live &amp; visible</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Drafts</div>
+        <div class="stat-val" id="stat-draft" style="color:var(--amber)">—</div>
+        <div class="stat-sub"><span class="stat-dot" style="background:var(--amber)"></span>not yet live</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Latest</div>
+        <div class="stat-val" id="stat-version" style="font-size:18px;padding-top:4px">—</div>
+        <div class="stat-sub">current version</div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <span class="section-title" id="section-subtitle">All changelog entries</span>
+      <div class="filter-row" id="filter-row">
+        <button class="filter-btn active" onclick="setTagFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setTagFilter('feature',this)">Feature</button>
+        <button class="filter-btn" onclick="setTagFilter('bug',this)">Bug Fix</button>
+        <button class="filter-btn" onclick="setTagFilter('ui',this)">UI</button>
+        <button class="filter-btn" onclick="setTagFilter('performance',this)">Performance</button>
+        <button class="filter-btn" onclick="setTagFilter('security',this)">Security</button>
+      </div>
+    </div>
+
+    <div class="entries-list" id="entries-list">
+      <!-- Loading skeletons -->
+      <div class="skeleton"><div class="skel-line skel-short"></div><div class="skel-line skel-wide"></div><div class="skel-line skel-med"></div></div>
+      <div class="skeleton"><div class="skel-line skel-short"></div><div class="skel-line skel-wide"></div><div class="skel-line skel-med"></div></div>
+      <div class="skeleton"><div class="skel-line skel-short"></div><div class="skel-line skel-wide"></div><div class="skel-line skel-med"></div></div>
+    </div>
+  </div>
+</main>
+</div><!-- /shell -->
+
+<!-- ════════ EDITOR MODAL ════════ -->
+<div class="overlay" id="editor-modal">
+  <div class="modal" style="max-width:800px">
+    <div class="modal-header">
+      <span class="modal-title" id="editor-title">New Changelog Entry</span>
+      <button class="modal-close" onclick="closeModal('editor-modal')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>VERSION</label>
+          <input type="text" id="f-version" placeholder="e.g. 2.1.0"/>
+        </div>
+        <div class="form-group">
+          <label>RELEASE DATE</label>
+          <input type="date" id="f-date"/>
+        </div>
+      </div>
+      <div class="form-group full">
+        <label>TITLE</label>
+        <input type="text" id="f-title" placeholder="e.g. Dark mode &amp; performance improvements"/>
+      </div>
+      <div class="form-group">
+        <label>TAGS</label>
+        <div class="tags-grid" id="tags-grid">
+          <button class="tag-toggle" data-tag="feature" onclick="toggleTag(this)">Feature</button>
+          <button class="tag-toggle" data-tag="bug" onclick="toggleTag(this)">Bug Fix</button>
+          <button class="tag-toggle" data-tag="ui" onclick="toggleTag(this)">UI</button>
+          <button class="tag-toggle" data-tag="performance" onclick="toggleTag(this)">Performance</button>
+          <button class="tag-toggle" data-tag="security" onclick="toggleTag(this)">Security</button>
+          <button class="tag-toggle" data-tag="breaking" onclick="toggleTag(this)">Breaking</button>
+        </div>
+      </div>
+      <div class="form-group full">
+        <label>DESCRIPTION (optional)</label>
+        <textarea id="f-desc" placeholder="Short summary of this release..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>WHAT CHANGED — BULLET POINTS</label>
+        <div class="bullets-list" id="bullets-list"></div>
+        <button class="add-bullet" onclick="addBullet()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+          Add bullet point
+        </button>
+      </div>
+      <div class="section-toggle">
+        <div class="section-toggle-head" onclick="toggleSection('code-sec')">
+          <span class="section-toggle-title">CODE SNIPPET (optional)</span>
+          <svg id="code-sec-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;color:var(--text3);transition:.15s"><polyline points="4 6 8 10 12 6"/></svg>
+        </div>
+        <div class="section-toggle-body" id="code-sec" style="display:none">
+          <textarea id="f-code" placeholder="// paste your code example here..." style="font-family:var(--mono);font-size:12px;min-height:80px"></textarea>
+        </div>
+      </div>
+      <!-- Media upload — uploads to Supabase Storage -->
+      <div class="form-group full">
+        <label>IMAGE / VIDEO</label>
+        <div class="upload-zone" id="upload-zone" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+          <input type="file" accept="image/*,video/*" multiple onchange="handleFiles(this.files)" id="file-input"/>
+          <div class="upload-icon">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M5 4V3a2 2 0 0 1 4 0v1"/><line x1="8" y1="8" x2="8" y2="12"/><polyline points="6 10 8 8 10 10"/></svg>
+          </div>
+          <div class="upload-label">Drop files here or click to upload</div>
+          <div class="upload-hint">PNG, JPG, GIF, MP4, MOV — max 50MB each</div>
+        </div>
+        <div class="upload-progress" id="upload-progress">
+          <div class="upload-progress-bar" id="upload-progress-bar" style="width:0%"></div>
+        </div>
+        <div class="media-preview" id="media-preview"></div>
+      </div>
+      <div class="form-row">
+        <div class="section-toggle">
+          <div class="section-toggle-head">
+            <span class="section-toggle-title">FEATURES SECTION</span>
+            <label class="toggle-switch"><input type="checkbox" id="t-features" checked/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="section-toggle-body">
+            <div class="bullets-list" id="feature-bullets"></div>
+            <button class="add-bullet" onclick="addSectionBullet('feature-bullets')">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+              Add feature
+            </button>
+          </div>
+        </div>
+        <div class="section-toggle">
+          <div class="section-toggle-head">
+            <span class="section-toggle-title">BUG FIXES SECTION</span>
+            <label class="toggle-switch"><input type="checkbox" id="t-bugs" checked/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="section-toggle-body">
+            <div class="bullets-list" id="bug-bullets"></div>
+            <button class="add-bullet" onclick="addSectionBullet('bug-bullets')">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+              Add bug fix
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>STATUS</label>
+          <select id="f-status">
+            <option value="draft">Draft — not visible yet</option>
+            <option value="published">Published — live now</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editor-modal')">Cancel</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="savePreview()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="3" width="14" height="10" rx="2"/><line x1="4" y1="7" x2="12" y2="7"/><line x1="4" y1="10" x2="9" y2="10"/></svg>
+          Preview
+        </button>
+        <button class="btn btn-primary" id="save-btn" onclick="saveEntry()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2 8 6 12 14 4"/></svg>
+          Save Entry
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PREVIEW MODAL ════════ -->
+<div class="overlay" id="preview-modal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <span class="modal-title">Preview — Public View</span>
+      <button class="modal-close" onclick="closeModal('preview-modal')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="preview-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('preview-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ DELETE CONFIRM ════════ -->
+<div class="overlay" id="delete-modal">
+  <div class="modal confirm-modal">
+    <div class="confirm-body">
+      <div class="confirm-icon">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2 4 4 4 14 4"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M13 4l-1 9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 4"/><line x1="6.5" y1="7" x2="6.5" y2="11"/><line x1="9.5" y1="7" x2="9.5" y2="11"/></svg>
+      </div>
+      <div class="confirm-title">Delete this entry?</div>
+      <div class="confirm-desc">This will permanently remove the changelog entry and all attached media. This cannot be undone.</div>
+    </div>
+    <div class="confirm-footer">
+      <button class="btn btn-ghost" onclick="closeModal('delete-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete Entry</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  SUPABASE INIT
+// ══════════════════════════════════════════════════════
+const { createClient } = supabase;
+let sb = null; // Supabase client — set after config
+
+const CFG_KEY = 'cl_supabase_cfg';
+
+function loadConfig(){
+  try { return JSON.parse(localStorage.getItem(CFG_KEY)); } catch { return null; }
+}
+
+function saveConfig(){
+  const url = document.getElementById('cfg-url').value.trim();
+  const key = document.getElementById('cfg-key').value.trim();
+  const errEl = document.getElementById('cfg-error');
+  const errMsg = document.getElementById('cfg-error-msg');
+  errEl.classList.remove('show');
+
+  if(!url || !key){
+    errMsg.textContent = 'Both fields are required.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(!url.startsWith('https://') && !url.startsWith('http://')){
+    errMsg.textContent = 'URL should start with https://';
+    errEl.classList.add('show');
+    return;
+  }
+
+  localStorage.setItem(CFG_KEY, JSON.stringify({ url, key }));
+  initSupabase(url, key);
+}
+
+function initSupabase(url, key){
+  sb = createClient(url, key);
+  // Hide config screen immediately (will re-show if error)
+  document.getElementById('config-screen').classList.add('hidden');
+  // Test connection by checking session
+  sb.auth.getSession().then(({ data, error }) => {
+    if(error){
+      document.getElementById('config-screen').classList.remove('hidden');
+      const errEl = document.getElementById('cfg-error');
+      document.getElementById('cfg-error-msg').textContent = 'Could not connect: ' + error.message;
+      errEl.classList.add('show');
+      return;
+    }
+    document.getElementById('config-screen').classList.add('hidden');
+    if(data.session){
+      applyUser(data.session.user);
+      showDashboard();
+    } else {
+      showLogin();
+    }
+  });
+}
+
+function resetConfig(){
+  localStorage.removeItem(CFG_KEY);
+  sb = null;
+  hideAll();
+  document.getElementById('config-screen').classList.remove('hidden');
+}
+
+function showLogin(){
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('main-shell').style.display = 'none';
+}
+
+function hideAll(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('main-shell').style.display = 'none';
+  document.getElementById('config-screen').classList.add('hidden');
+}
+
+// ══════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════
+async function doLogin(){
+  const email = document.getElementById('l-user').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+  errEl.classList.remove('show');
+
+  if(!email || !pass){ showLoginError('Please enter email and password'); return; }
+
+  btn.classList.add('loading'); btn.disabled = true;
+  document.getElementById('l-user').classList.remove('error');
+  document.getElementById('l-pass').classList.remove('error');
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+
+  btn.classList.remove('loading'); btn.disabled = false;
+
+  if(error){
+    showLoginError(error.message);
+    document.getElementById('l-user').classList.add('error');
+    document.getElementById('l-pass').classList.add('error');
+    document.getElementById('l-pass').value = '';
+    return;
+  }
+
+  applyUser(data.user);
+  document.getElementById('login-screen').classList.add('hidden');
+  showDashboard();
+}
+
+function showLoginError(msg){
+  document.getElementById('login-error-msg').textContent = msg;
+  document.getElementById('login-error').classList.add('show');
+}
+
+function applyUser(user){
+  const email = user.email || 'user';
+  const initials = email.charAt(0).toUpperCase();
+  document.getElementById('sidebar-avatar').textContent = initials;
+  document.getElementById('sidebar-name').textContent = email.split('@')[0];
+  document.getElementById('sidebar-role').textContent = user.role || 'authenticated';
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  document.getElementById('main-shell').style.display = 'none';
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('l-user').value = '';
+  document.getElementById('l-pass').value = '';
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('l-user').classList.remove('error');
+  document.getElementById('l-pass').classList.remove('error');
+  entries = [];
+  renderAll();
+}
+
+function loginKey(e){ if(e.key === 'Enter') doLogin(); }
+
+function toggleEye(){
+  const inp = document.getElementById('l-pass');
+  const icon = document.getElementById('eye-icon');
+  if(inp.type === 'password'){
+    inp.type = 'text';
+    icon.innerHTML = '<line x1="2" y1="2" x2="14" y2="14"/><path d="M6.5 6.5A3 3 0 0 0 8 11a3 3 0 0 0 2.83-2"/><path d="M3 8s1.3-2 3-3.3"/><path d="M11 4.7C12.3 5.7 14 8 14 8s-3 5-6 5a5 5 0 0 1-2-.4"/>';
+  } else {
+    inp.type = 'password';
+    icon.innerHTML = '<path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/>';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let entries   = [];
+let editingId = null;
+let deleteId  = null;
+let currentNav = 'entries';
+let tagFilter  = 'all';
+let mediaFiles = []; // [{name, url, type, path}] path = Supabase storage path for existing, null for new files
+
+// ══════════════════════════════════════════════════════
+//  DASHBOARD BOOT
+// ══════════════════════════════════════════════════════
+async function showDashboard(){
+  document.getElementById('main-shell').style.display = 'grid';
+  await loadEntries();
+}
+
+// ══════════════════════════════════════════════════════
+//  DATA — SUPABASE CRUD
+// ══════════════════════════════════════════════════════
+async function loadEntries(){
+  showSkeletons();
+  const { data, error } = await sb
+    .from('changelog_entries')
+    .select('*')
+    .order('date', { ascending: false });
+
+  if(error){
+    toast('Failed to load entries: ' + error.message, 'error');
+    document.getElementById('entries-list').innerHTML = `<div class="empty"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><circle cx="8" cy="11" r=".5" fill="currentColor"/></svg><p>Could not load entries</p></div>`;
+    return;
+  }
+
+  // Normalize DB rows → local shape
+  entries = (data || []).map(r => ({
+    id:       r.id,
+    version:  r.version,
+    title:    r.title,
+    date:     r.date,
+    desc:     r.description,
+    code:     r.code || '',
+    tags:     r.tags || [],
+    bullets:  r.bullets || [],
+    features: r.features || [],
+    bugs:     r.bugs || [],
+    media:    r.media || [],
+    status:   r.status,
+  }));
+
+  renderAll();
+}
+
+async function upsertEntry(data, id){
+  const row = {
+    version:     data.version,
+    title:       data.title,
+    date:        data.date,
+    description: data.desc,
+    code:        data.code,
+    tags:        data.tags,
+    bullets:     data.bullets,
+    features:    data.features,
+    bugs:        data.bugs,
+    media:       data.media,
+    status:      data.status,
+  };
+
+  if(id){
+    const { error } = await sb.from('changelog_entries').update(row).eq('id', id);
+    if(error) throw error;
+  } else {
+    const { error } = await sb.from('changelog_entries').insert(row);
+    if(error) throw error;
+  }
+}
+
+async function deleteEntry(id){
+  const entry = entries.find(e => e.id === id);
+  // Delete media files from storage
+  if(entry && entry.media && entry.media.length){
+    const paths = entry.media.filter(m => m.path).map(m => m.path);
+    if(paths.length) await sb.storage.from('changelog-media').remove(paths);
+  }
+  const { error } = await sb.from('changelog_entries').delete().eq('id', id);
+  if(error) throw error;
+}
+
+// ══════════════════════════════════════════════════════
+//  MEDIA — SUPABASE STORAGE
+// ══════════════════════════════════════════════════════
+async function uploadMediaFiles(rawFiles){
+  if(!rawFiles.length) return [];
+  const uploaded = [];
+  const prog = document.getElementById('upload-progress');
+  const bar  = document.getElementById('upload-progress-bar');
+  prog.style.display = 'block';
+
+  for(let i = 0; i < rawFiles.length; i++){
+    const file = rawFiles[i];
+    const ext  = file.name.split('.').pop();
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    bar.style.width = Math.round(((i) / rawFiles.length) * 100) + '%';
+
+    const { error } = await sb.storage
+      .from('changelog-media')
+      .upload(path, file, { upsert: false });
+
+    if(error){
+      toast('Upload failed for ' + file.name + ': ' + error.message, 'error');
+      continue;
+    }
+
+    const { data: { publicUrl } } = sb.storage
+      .from('changelog-media')
+      .getPublicUrl(path);
+
+    uploaded.push({ name: file.name, url: publicUrl, type: file.type, path });
+    bar.style.width = Math.round(((i + 1) / rawFiles.length) * 100) + '%';
+  }
+
+  prog.style.display = 'none';
+  bar.style.width = '0%';
+  return uploaded;
+}
+
+// ══════════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════════
+function renderAll(){ updateStats(); renderList(); }
+
+function showSkeletons(){
+  document.getElementById('entries-list').innerHTML = `
+    <div class="skeleton"><div class="skel-line skel-short"></div><div class="skel-line skel-wide"></div><div class="skel-line skel-med"></div></div>
+    <div class="skeleton"><div class="skel-line skel-short"></div><div class="skel-line skel-wide"></div><div class="skel-line skel-med"></div></div>
+    <div class="skeleton"><div class="skel-line skel-short"></div><div class="skel-line skel-wide"></div><div class="skel-line skel-med"></div></div>
+  `;
+}
+
+function updateStats(){
+  const pub    = entries.filter(e => e.status === 'published');
+  const draft  = entries.filter(e => e.status === 'draft');
+  const latest = [...pub].sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+  document.getElementById('stat-total').textContent   = entries.length;
+  document.getElementById('stat-pub').textContent     = pub.length;
+  document.getElementById('stat-draft').textContent   = draft.length;
+  document.getElementById('stat-version').textContent = latest ? 'v' + latest.version : '—';
+  document.getElementById('badge-all').textContent    = entries.length;
+  document.getElementById('badge-pub').textContent    = pub.length;
+  document.getElementById('badge-draft').textContent  = draft.length;
+}
+
+function renderList(){
+  const search = document.getElementById('search-input').value.toLowerCase();
+  let list = [...entries];
+  if(currentNav === 'published') list = list.filter(e => e.status === 'published');
+  if(currentNav === 'draft')     list = list.filter(e => e.status === 'draft');
+  if(tagFilter !== 'all')        list = list.filter(e => e.tags.includes(tagFilter));
+  if(search) list = list.filter(e =>
+    e.title.toLowerCase().includes(search) ||
+    e.version.toLowerCase().includes(search) ||
+    (e.desc || '').toLowerCase().includes(search)
+  );
+  list.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  const el = document.getElementById('entries-list');
+  if(!list.length){
+    el.innerHTML = `<div class="empty"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="8" y2="9"/></svg><p>No entries found</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(e => `
+    <div class="entry-card" id="card-${e.id}">
+      <div class="entry-inner">
+        <div>
+          <div class="entry-meta">
+            <span class="version-pill">v${esc(e.version)}</span>
+            <span class="date-txt">${formatDate(e.date)}</span>
+            <span class="status-pill ${e.status}">${e.status}</span>
+          </div>
+          <div class="entry-title">${esc(e.title)}</div>
+          <div class="entry-tags">
+            ${e.tags.map(t => `<span class="tag tag-${t}">${tagLabel(t)}</span>`).join('')}
+            ${e.media && e.media.length ? `<span class="has-media"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="4" width="14" height="10" rx="2"/><circle cx="5" cy="9" r="1.5"/><polyline points="1 12 5 8 8 11 11 8 15 12"/></svg>${e.media.length} media</span>` : ''}
+          </div>
+        </div>
+        <div class="entry-actions">
+          <button class="btn btn-ghost btn-sm" onclick="previewEntry('${e.id}',event)">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
+            Preview
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="editEntry('${e.id}',event)">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 12l2-2 7-7 2 2-7 7-2 2z"/></svg>
+            Edit
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="askDelete('${e.id}',event)">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><polyline points="2 4 4 4 14 4"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M13 4l-1 9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 4"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  NAV / FILTER
+// ══════════════════════════════════════════════════════
+function setNav(el, nav){
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  currentNav = nav;
+  const labels = { entries:'All Entries', published:'Published', draft:'Drafts' };
+  document.getElementById('page-title-txt').textContent = labels[nav] || 'All Entries';
+  document.getElementById('section-subtitle').textContent = nav === 'entries' ? 'All changelog entries' : (nav === 'published' ? 'Published entries' : 'Draft entries');
+  renderList();
+}
+
+function filterEntries(){ renderList(); }
+
+function setTagFilter(tag, el){
+  tagFilter = tag;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+}
+
+// ══════════════════════════════════════════════════════
+//  EDITOR
+// ══════════════════════════════════════════════════════
+function openCreateModal(){
+  editingId = null;
+  mediaFiles = [];
+  document.getElementById('editor-title').textContent = 'New Changelog Entry';
+  document.getElementById('f-version').value = '';
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-desc').value = '';
+  document.getElementById('f-code').value = '';
+  document.getElementById('f-status').value = 'draft';
+  document.querySelectorAll('.tag-toggle').forEach(t => t.className = 'tag-toggle');
+  document.getElementById('bullets-list').innerHTML = '';
+  document.getElementById('feature-bullets').innerHTML = '';
+  document.getElementById('bug-bullets').innerHTML = '';
+  document.getElementById('media-preview').innerHTML = '';
+  addBullet();
+  openModal('editor-modal');
+}
+
+function editEntry(id, e){
+  if(e) e.stopPropagation();
+  const entry = entries.find(x => x.id === id);
+  if(!entry) return;
+  editingId = id;
+  mediaFiles = (entry.media || []).map(m => ({ ...m })); // clone
+  document.getElementById('editor-title').textContent = 'Edit Entry';
+  document.getElementById('f-version').value = entry.version;
+  document.getElementById('f-date').value = entry.date;
+  document.getElementById('f-title').value = entry.title;
+  document.getElementById('f-desc').value = entry.desc || '';
+  document.getElementById('f-code').value = entry.code || '';
+  document.getElementById('f-status').value = entry.status;
+  document.querySelectorAll('.tag-toggle').forEach(t => {
+    t.className = 'tag-toggle';
+    if(entry.tags.includes(t.dataset.tag)) t.className = `tag-toggle sel-${t.dataset.tag}`;
+  });
+  document.getElementById('bullets-list').innerHTML = '';
+  (entry.bullets || []).forEach(b => addBullet(b));
+  if(!(entry.bullets || []).length) addBullet();
+  document.getElementById('feature-bullets').innerHTML = '';
+  (entry.features || []).forEach(b => addSectionBullet('feature-bullets', b));
+  document.getElementById('bug-bullets').innerHTML = '';
+  (entry.bugs || []).forEach(b => addSectionBullet('bug-bullets', b));
+  renderMediaPreviews();
+  openModal('editor-modal');
+}
+
+function toggleTag(el){
+  const tag = el.dataset.tag;
+  if(el.classList.contains(`sel-${tag}`)){
+    el.className = 'tag-toggle';
+  } else {
+    el.className = `tag-toggle sel-${tag}`;
+  }
+}
+
+function addBullet(val = ''){
+  const list = document.getElementById('bullets-list');
+  const row = document.createElement('div');
+  row.className = 'bullet-row';
+  row.innerHTML = `<input type="text" placeholder="e.g. Fixed login timeout issue" value="${attr(val)}"/><button class="btn-icon" onclick="this.parentNode.remove()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" width="12" height="12"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg></button>`;
+  list.appendChild(row);
+}
+
+function addSectionBullet(listId, val = ''){
+  const list = document.getElementById(listId);
+  const row = document.createElement('div');
+  row.className = 'bullet-row';
+  row.innerHTML = `<input type="text" placeholder="Add item..." value="${attr(val)}"/><button class="btn-icon" onclick="this.parentNode.remove()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" width="12" height="12"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg></button>`;
+  list.appendChild(row);
+}
+
+function toggleSection(id){
+  const el = document.getElementById(id);
+  const arr = document.getElementById(id + '-arrow');
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'flex';
+  arr.style.transform = open ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+
+// ══════════════════════════════════════════════════════
+//  MEDIA HANDLING
+// ══════════════════════════════════════════════════════
+// pendingFiles = raw File objects waiting to be uploaded on save
+let pendingFiles = [];
+
+function handleFiles(files){
+  for(const f of files){
+    const url = URL.createObjectURL(f);
+    // Store as pending with a temp URL for preview
+    pendingFiles.push({ file: f, url, type: f.type, name: f.name });
+    mediaFiles.push({ name: f.name, url, type: f.type, path: null /* not yet uploaded */ });
+  }
+  renderMediaPreviews();
+}
+
+function dragOver(e){ e.preventDefault(); document.getElementById('upload-zone').classList.add('dragging'); }
+function dragLeave(){ document.getElementById('upload-zone').classList.remove('dragging'); }
+function dropFile(e){ e.preventDefault(); dragLeave(); handleFiles(e.dataTransfer.files); }
+
+function renderMediaPreviews(){
+  document.getElementById('media-preview').innerHTML = mediaFiles.map((f,i) => `
+    <div class="media-thumb">
+      ${f.type && f.type.startsWith('video') ?
+        `<video src="${f.url}" muted></video>` :
+        `<img src="${f.url}" alt="${esc(f.name)}"/>`}
+      <button class="remove-media" onclick="removeMedia(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function removeMedia(i){
+  const removed = mediaFiles.splice(i, 1)[0];
+  // Also remove from pending if it was a new file
+  pendingFiles = pendingFiles.filter(p => p.url !== removed.url);
+  renderMediaPreviews();
+}
+
+// ══════════════════════════════════════════════════════
+//  SAVE
+// ══════════════════════════════════════════════════════
+function collectForm(){
+  const tags = [];
+  document.querySelectorAll('.tag-toggle').forEach(t => {
+    if(t.className.includes('sel-')) tags.push(t.dataset.tag);
+  });
+  const bullets  = [...document.getElementById('bullets-list').querySelectorAll('input')].map(i => i.value).filter(Boolean);
+  const features = [...document.getElementById('feature-bullets').querySelectorAll('input')].map(i => i.value).filter(Boolean);
+  const bugs     = [...document.getElementById('bug-bullets').querySelectorAll('input')].map(i => i.value).filter(Boolean);
+  return {
+    version: document.getElementById('f-version').value.trim(),
+    date:    document.getElementById('f-date').value,
+    title:   document.getElementById('f-title').value.trim(),
+    desc:    document.getElementById('f-desc').value.trim(),
+    code:    document.getElementById('f-code').value.trim(),
+    status:  document.getElementById('f-status').value,
+    tags, bullets, features, bugs,
+    media: mediaFiles
+  };
+}
+
+async function saveEntry(){
+  const data = collectForm();
+  if(!data.version || !data.title){
+    toast('Version and title are required', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.2);border-top-color:#0c0c0e;border-radius:50%;animation:spin .6s linear infinite"></span><span> Saving…</span>`;
+
+  try {
+    // 1. Upload any pending new files to Supabase Storage
+    if(pendingFiles.length){
+      const rawFiles = pendingFiles.map(p => p.file);
+      const uploaded = await uploadMediaFiles(rawFiles);
+      // Replace pending entries in mediaFiles with their real public URLs
+      pendingFiles.forEach((pf, idx) => {
+        const mediaIdx = mediaFiles.findIndex(m => m.url === pf.url);
+        if(mediaIdx !== -1 && uploaded[idx]){
+          mediaFiles[mediaIdx] = uploaded[idx];
+        }
+      });
+      pendingFiles = [];
+      data.media = mediaFiles;
+    }
+
+    // 2. Write to Supabase DB
+    await upsertEntry(data, editingId);
+
+    toast(editingId ? 'Entry updated' : 'Entry created', 'success');
+    closeModal('editor-modal');
+    await loadEntries();
+  } catch(err){
+    toast('Save failed: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2 8 6 12 14 4"/></svg> Save Entry`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  PREVIEW
+// ══════════════════════════════════════════════════════
+function previewEntry(id, e){
+  if(e) e.stopPropagation();
+  const entry = entries.find(x => x.id === id);
+  if(entry) showPreview(entry);
+}
+
+function savePreview(){ showPreview(collectForm()); }
+
+function showPreview(entry){
+  const media = entry.media || [];
+  const firstImg = media.find(m => m.type && m.type.startsWith('image'));
+  const firstVid = media.find(m => m.type && m.type.startsWith('video'));
+  document.getElementById('preview-content').innerHTML = `
+    <div class="preview-wrap">
+      <div class="preview-date">${formatDate(entry.date)}</div>
+      <div class="preview-version">v${esc(entry.version||'')}</div>
+      <div class="preview-title">${esc(entry.title||'')}</div>
+      <div class="preview-tags">${(entry.tags||[]).map(t=>`<span class="tag tag-${t}">${tagLabel(t)}</span>`).join('')}</div>
+      ${firstVid ? `<video src="${firstVid.url}" class="preview-image" controls></video>` : ''}
+      ${firstImg && !firstVid ? `<img src="${firstImg.url}" class="preview-image" alt=""/>` : ''}
+      ${entry.desc ? `<p style="color:var(--text2);font-size:14px;margin-bottom:14px">${esc(entry.desc)}</p>` : ''}
+      ${entry.bullets && entry.bullets.length ? `<ul class="preview-bullets">${entry.bullets.map(b=>`<li><strong>${esc(b.split(':')[0])}</strong>${b.includes(':') ? ': ' + esc(b.split(':').slice(1).join(':')) : ''}</li>`).join('')}</ul>` : ''}
+      ${entry.code ? `<pre class="preview-code">${esc(entry.code)}</pre>` : ''}
+      ${entry.features && entry.features.length ? `<div class="preview-section-title">Features</div><ul class="preview-bullets">${entry.features.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+      ${entry.bugs && entry.bugs.length ? `<div class="preview-section-title">Bug Fixes</div><ul class="preview-bullets">${entry.bugs.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>` : ''}
+    </div>
+  `;
+  openModal('preview-modal');
+}
+
+// ══════════════════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════════════════
+function askDelete(id, e){
+  if(e) e.stopPropagation();
+  deleteId = id;
+  openModal('delete-modal');
+}
+
+async function confirmDelete(){
+  try {
+    await deleteEntry(deleteId);
+    closeModal('delete-modal');
+    toast('Entry deleted', 'info');
+    await loadEntries();
+  } catch(err){
+    toast('Delete failed: ' + err.message, 'error');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  MODAL HELPERS
+// ══════════════════════════════════════════════════════
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  if(id === 'editor-modal') pendingFiles = [];
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if(e.target === o) o.classList.remove('open'); });
+});
+
+function showSqlGuide(){ openModal('sql-modal'); }
+
+function openPreviewSite(){ toast('Connect your /changelog frontend route', 'info'); }
+function openWidgetPreview(){ toast('Embed the widget component in your app navbar', 'info'); }
+
+// ══════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════
+function esc(s){ return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function attr(s){ return (s || '').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function formatDate(d){
+  if(!d) return 'No date';
+  try {
+    const dt = new Date(d + 'T12:00:00');
+    if(isNaN(dt)) return d;
+    return dt.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+  } catch { return d; }
+}
+
+function tagLabel(t){
+  const map = { feature:'Feature', bug:'Bug Fix', ui:'UI', performance:'Performance', security:'Security', breaking:'Breaking' };
+  return map[t] || t;
+}
+
+function toast(msg, type = 'success'){
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-dot"></span>${msg}`;
+  wrap.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 200); }, 2800);
+}
+
+// ══════════════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════════════
+(function init(){
+  const cfg = loadConfig();
+  if(cfg && cfg.url && cfg.key){
+    document.getElementById('cfg-url').value = cfg.url;
+    document.getElementById('cfg-key').value = cfg.key;
+    document.getElementById('config-screen').classList.add('hidden');
+    initSupabase(cfg.url, cfg.key);
+  }
+  // else: config screen is shown by default
+})();
+</script>
+</body>
+</html>
